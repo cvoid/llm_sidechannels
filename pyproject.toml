@@ -9,6 +9,7 @@ dependencies = [
     "numpy>=1.26",
     "pandas>=2.2",
     "lightgbm>=4.3",
+    "aiohttp>=3.9",
 ]
 
 [dependency-groups]
@@ -24,7 +25,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["serve*", "collect*", "features*", "attack*"]
+include = ["serve*", "collect*", "features*", "attack*", "defend*"]
 
 [tool.mypy]
 strict = true
