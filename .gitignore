@@ -1,0 +1,23 @@
+CLAUDE.md
+.gitignore
+
+# data and logs (large files, not for version control)
+/data/
+/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# uv
+uv.lock
+
+# editor
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store

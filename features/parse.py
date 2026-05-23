@@ -49,9 +49,12 @@ def trace_from_pcap(
     pcap_path: Path,
     server_port: int = 8443,
     window_ms: float = 50.0,
+    skip_leading: int = 2,
 ) -> list[int]:
     records = extract_records(pcap_path, server_port)
-    return group_iterations(records, window_ms)
+    # First two iterations are the TLS handshake record and the HTTP response
+    # headers -- constant across all requests, zero discriminating signal.
+    return group_iterations(records, window_ms)[skip_leading:]
 
 
 def calibrate_window(

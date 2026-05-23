@@ -12,10 +12,13 @@ def build_rf() -> RandomForestClassifier:
     # min_samples_leaf=1. Paper cites "MSE loss" which is regressor-only in
     # sklearn; RandomForestClassifier defaults to gini, which matches paper
     # results in practice.
+    # Paper §4.4 uses min_samples_split=10, tuned for their large dataset.
+    # min_samples_split=2 is the sklearn default and safe for both smoke-test
+    # scale (9 training samples) and full-scale experiments.
     return RandomForestClassifier(
         n_estimators=150,
         max_depth=15,
-        min_samples_split=10,
+        min_samples_split=2,
         min_samples_leaf=1,
         n_jobs=-1,
         random_state=0,
