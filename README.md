@@ -10,7 +10,7 @@ observing per-iteration packet sizes, without decrypting anything.
 ## Papers
 
 **[1] Carlini & Nasr (2024). Remote Timing Attacks on Efficient Language Model Inference.**
-arXiv:2410.17175. Google DeepMind.
+[arXiv:2410.17175](https://arxiv.org/abs/2410.17175). Google DeepMind.
 
 The founding paper. Shows that speculative decoding and other efficient
 inference techniques introduce data-dependent timing characteristics: a model
@@ -22,7 +22,7 @@ to open-source systems, an active adversary can recover PII (phone numbers,
 credit card numbers) placed in prompts.
 
 **[2] Wei et al. (2025). When Speculation Spills Secrets: Side Channels via Speculative Decoding in LLMs.**
-arXiv:2411.01076. University of Toronto.
+[arXiv:2411.01076](https://arxiv.org/abs/2411.01076). University of Toronto.
 
 The primary paper this repo reproduces. Correct speculations generate multiple
 tokens per iteration (larger TLS records); incorrect speculations fall back to
@@ -33,7 +33,7 @@ BiLD 95.2%, EAGLE 77.6%) at temperature 0.3. Also demonstrates leaking
 confidential data-store contents at rates exceeding 25 tokens per second.
 
 **[3] McDonald & Bar Or (2025). Whisper Leak: A Side-Channel Attack on Large Language Models.**
-arXiv:2511.03675. Microsoft.
+[arXiv:2511.03675](https://arxiv.org/abs/2511.03675). Microsoft.
 
 Broadest evaluation: 28 production LLMs from major providers, up to 21,716
 queries per model. Trains LightGBM, LSTM, and BERT classifiers on packet size
@@ -307,9 +307,9 @@ uv run mypy --strict .
 ## References
 
 - Carlini, N. & Nasr, M. (2024). Remote Timing Attacks on Efficient Language
-  Model Inference. arXiv:2410.17175.
+  Model Inference. [arXiv:2410.17175](https://arxiv.org/abs/2410.17175).
 - Wei, J., Abdulrazzag, A., Zhang, T., Muursepp, A. & Saileshwar, G. (2025).
   When Speculation Spills Secrets: Side Channels via Speculative Decoding in
-  LLMs. arXiv:2411.01076.
+  LLMs. [arXiv:2411.01076](https://arxiv.org/abs/2411.01076).
 - McDonald, G. & Bar Or, J. (2025). Whisper Leak: A Side-Channel Attack on
-  Large Language Models. arXiv:2511.03675.
+  Large Language Models. [arXiv:2511.03675](https://arxiv.org/abs/2511.03675).
