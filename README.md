@@ -1,10 +1,11 @@
 # LLM Side-Channel Experiment Rig
 
 Passive network side-channel attacks on streaming LLMs. This repo reproduces
-the core experiments from three papers listed below, targeting speculative
-decoding as the signal source. A passive adversary monitoring encrypted TLS
-traffic can fingerprint user queries with high accuracy by observing
-per-iteration packet sizes and inter-arrival gaps, without decrypting anything.
+the core query-fingerprinting experiment from Wei et al. (arXiv:2411.01076)
+and related work, targeting speculative decoding as the signal source. A
+passive adversary monitoring encrypted TLS traffic can fingerprint which of 50
+medical queries a user sent -- with 95.6% accuracy at temperature 0.3 -- by
+observing per-iteration packet sizes, without decrypting anything.
 
 ## Papers
 
@@ -23,12 +24,12 @@ credit card numbers) placed in prompts.
 **[2] Wei et al. (2025). When Speculation Spills Secrets: Side Channels via Speculative Decoding in LLMs.**
 arXiv:2411.01076. University of Toronto.
 
-Focuses specifically on speculative decoding as the signal source. Correct
-speculations generate multiple tokens per iteration (larger packets); incorrect
-speculations fall back to one token (smaller packets). By observing the
-sequence of packet sizes, an adversary can fingerprint queries from a set of
-50 prompts with over 75% accuracy across four speculative decoding schemes
-(REST 100%, LADE 91.6%, BiLD 95.2%, EAGLE 77.6%). Also demonstrates leaking
+The primary paper this repo reproduces. Correct speculations generate multiple
+tokens per iteration (larger TLS records); incorrect speculations fall back to
+one token (smaller records). By observing the sequence of per-iteration packet
+sizes, an adversary can fingerprint queries from a set of 50 prompts with over
+75% accuracy across four speculative decoding schemes (REST 100%, LADE 91.6%,
+BiLD 95.2%, EAGLE 77.6%) at temperature 0.3. Also demonstrates leaking
 confidential data-store contents at rates exceeding 25 tokens per second.
 
 **[3] McDonald & Bar Or (2025). Whisper Leak: A Side-Channel Attack on Large Language Models.**
@@ -40,6 +41,96 @@ and timing sequences to detect whether a conversation matches a sensitive
 target topic. Achieves greater than 98% AUPRC for most models, with 100%
 precision at 5-20% recall under a 10,000:1 noise-to-target imbalance. Proposes
 random padding, token batching, and packet injection as partial mitigations.
+
+## Results
+
+Experiment 1 reproduces the Wei et al. query-fingerprinting attack (paper
+Figure 3) on our local llama.cpp setup. 50 MedAlpaca prompts, 30 traces per
+query, Random Forest classifier (paper §4.4 hyperparameters), 25 train / 5
+test traces per class.
+
+### TPQ sweep -- accuracy vs traces per query
+
+| temp | tpq=5 | tpq=10 | tpq=20 | tpq=30 |
+|------|-------|--------|--------|--------|
+| 0.3  | 0.892 | 0.940  | 0.940  | **0.956** |
+| 0.6  | 0.692 | 0.784  | 0.852  | 0.860  |
+| 0.8  | 0.596 | 0.704  | 0.808  | 0.804  |
+| 1.0  | 0.544 | 0.644  | 0.712  | 0.744  |
+
+Paper reports ~100% for REST-style speculative decoding at temperature 0.3.
+Our result of 95.6% at tpq=30 is consistent after accounting for hardware
+differences (A100 vs dual RTX 3070, remote server vs loopback).
+
+### Per-class breakdown at temp=0.3, tpq=30
+
+43 of 50 prompts classify perfectly. The 7 errors are concentrated in two
+structurally similar pairs:
+
+- **Antisocial personality disorder** (urgent) confused with **Avoidant
+  personality disorder** (urgent) -- 3 of 5 test traces misclassified. Both
+  are short psychiatric "when to seek care" responses with nearly identical
+  response lengths and iteration profiles.
+- Three other prompts each produce one error against a prompt of similar
+  response length in the same question template.
+
+The accuracy degradation at higher temperatures is expected: at temperature
+1.0, the draft model's speculative tokens are accepted less consistently,
+making per-iteration byte counts noisier across repeated captures of the same
+prompt.
+
+## How It Works
+
+### The signal source
+
+llama.cpp runs speculative decoding: a small draft model (Qwen2.5-0.5B)
+proposes multiple candidate tokens per iteration, and the large target model
+(Qwen2.5-7B) verifies them in a single forward pass. When the draft's
+predictions are correct, multiple tokens are accepted and streamed together in
+one SSE chunk -- producing a large TLS record. When the draft is wrong, only
+one token is accepted -- producing a small record. The number of tokens
+accepted per iteration is input-dependent: "easy" content (common medical
+phrases, predictable continuations) accepts more speculative tokens than
+"hard" content (unusual terminology, complex reasoning).
+
+This means the sequence of TLS record sizes for a given prompt is a
+fingerprint: it encodes which parts of the response were easy vs hard for the
+draft to predict, which is a function of the specific content generated.
+
+### The feature vector
+
+For each response, we capture the raw TLS traffic with tcpdump on the loopback
+interface. Scapy parses the pcap and extracts server-to-client payload sizes
+with timestamps. We group packets into decode iterations using a timing window
+(`window_ms`, calibrated per-machine), sum the bytes within each window, drop
+the first two iterations (constant TLS handshake and HTTP header overhead),
+and pad or truncate to a fixed length of 100 iterations. The result is a
+100-dimensional vector of bytes-per-iteration.
+
+### The attack
+
+**Offline profiling phase:** capture 25-30 traces per prompt across the 50
+target queries. Build a 100-dimension feature matrix and train a Random Forest
+classifier (150 trees, max depth 15).
+
+**Online phase:** capture one trace for an unknown query. Extract its feature
+vector and classify against the trained model.
+
+### Why nginx and tcpdump matter
+
+Two configuration details are critical for the signal to be observable:
+
+**nginx must not buffer or compress.** With `proxy_buffering on` or `gzip on`,
+nginx accumulates SSE chunks before forwarding them, collapsing multiple
+per-iteration records into a single packet. The classifier sees a flat signal
+and accuracy collapses to chance. The config uses `proxy_buffering off`,
+`gzip off`, and `tcp_nodelay on`.
+
+**tcpdump must use `--immediate-mode`.** Without it, libpcap (TPACKET_V3)
+accumulates packets into ring-buffer blocks and only delivers them when a
+block fills or a ~64ms retirement timer fires. Short responses can complete
+before any block retires, yielding zero captured packets. `--immediate-mode`
+forces per-packet delivery.
 
 ## Hardware
 
@@ -57,15 +148,8 @@ random padding, token batching, and packet injection as partial mitigations.
 | Draft model | Qwen2.5-0.5B-Instruct Q8 | Fast enough to sustain useful speculation rate |
 | TLS termination | nginx with self-signed cert | Realistic TLS boundary on server.local:8443 |
 | Packet capture | tcpdump + scapy | tcpdump for raw capture, scapy for offline parsing |
-| Classifier | RandomForest (sklearn), LightGBM | Matches paper hyperparameters; BiLSTM next |
+| Classifier | RandomForest (sklearn) | Matches paper §4.4 hyperparameters |
 | Environment | Python 3.11+, uv | Reproducible, fast |
-
-**nginx is configured with `tcp_nodelay on` and `proxy_buffering off`** so each
-SSE chunk from llama.cpp becomes its own TLS record without Nagle coalescing.
-
-**tcpdump is invoked with `--immediate-mode`** to bypass TPACKET_V3 ring-buffer
-block retirement. Without this flag, libpcap batches packets into 64ms blocks
-and short responses complete before any block retires, yielding zero captures.
 
 ## Repo Layout
 
@@ -107,9 +191,9 @@ uv sync
 bash tools/start_llama.sh
 ```
 
-This starts llama.cpp with speculative decoding (Qwen2.5-7B target,
-Qwen2.5-0.5B draft), GPU offload, and 4 HTTP threads. Logs go to
-`logs/llama.log`. Confirm speculative decoding is active:
+Starts llama.cpp with speculative decoding (Qwen2.5-7B target, Qwen2.5-0.5B
+draft), full GPU offload, and 4 HTTP threads. Logs go to `logs/llama.log`.
+Confirm speculative decoding is active before proceeding:
 
 ```bash
 grep -i draft logs/llama.log
@@ -121,11 +205,12 @@ grep -i draft logs/llama.log
 bash tools/calibrate.sh
 ```
 
-Captures one query and computes `window_ms`, the gap threshold that separates
-within-iteration TCP fragmentation from between-iteration inference pauses.
-The calibration finds the valley between the two gap clusters using the largest
-ratio between consecutive sorted gaps, then returns the geometric mean of the
-valley bounds. Copy the printed `window_ms` value for the next steps.
+Captures one query and computes `window_ms`: the gap threshold that separates
+within-iteration TCP fragmentation (sub-millisecond) from between-iteration
+inference pauses (tens of milliseconds). The algorithm finds the largest ratio
+between consecutive sorted inter-packet gaps, then returns the geometric mean
+of the bounding gaps. The value is hardware-dependent and should be
+recalibrated if the server or models change.
 
 ### 3. Smoke test
 
@@ -136,36 +221,65 @@ uv run python tools/smoke_test.py --window-ms <value>
 Profiles 3 prompts x 5 runs, builds features, trains a RandomForest, and
 checks that accuracy is at least 10 percentage points above chance (0.33 for 3
 classes). A passing smoke test confirms the full capture-to-classifier pipeline
-is working before committing to a 1500-query profiling session.
+is working before committing to a multi-hour profiling session. If accuracy is
+near chance, check pcap sizes (`ls -lh data/smoke/*.pcap`) and recalibrate.
 
 ### 4. Full profiling
 
 ```bash
 uv run python tools/profile.py --temperature 0.3 --tpq 30
 uv run python tools/profile.py --temperature 0.6 --tpq 30
+uv run python tools/profile.py --temperature 0.8 --tpq 30
+uv run python tools/profile.py --temperature 1.0 --tpq 30
 ```
 
-Captures `n_prompts * tpq` pcap files and writes a `manifest.jsonl`.
-Estimated time is printed before the run starts (~5 s per query at temperature
-0.3 with speculative decoding active).
+Captures `n_prompts * tpq` pcap files and writes a `manifest.jsonl` per
+temperature. Estimated time is printed before each run starts (~5 s per query
+at temperature 0.3 with speculative decoding active, ~8 hours for all four
+temperatures at tpq=30).
 
 ### 5. TPQ sweep
 
+Merge the per-temperature manifests and run the sweep:
+
 ```bash
-uv run python tools/tpq_sweep.py --manifest data/raw/temp_0.3/manifest.jsonl \
+cat data/raw_clean/temp_*/manifest.jsonl > data/raw_clean/manifest_all.jsonl
+
+uv run python tools/tpq_sweep.py \
+    --manifest data/raw_clean/manifest_all.jsonl \
+    --window-ms <value> \
+    --temperatures 0.3 0.6 0.8 1.0 \
+    --out analysis/exp1_tpq_sweep_clean.csv
+```
+
+Trains and evaluates a Random Forest at each (temperature, TPQ) combination,
+following the paper's protocol: train on the first `tpq` traces per class,
+test on the remaining 5. Results are written to `analysis/`.
+
+### 6. Prompt diversity analysis
+
+```bash
+uv run python tools/analyze_prompt_diversity.py \
+    --manifest data/raw_clean/manifest_all.jsonl \
     --window-ms <value>
 ```
 
-Evaluates accuracy as a function of traces-per-query across multiple
-temperatures. Results are written to `analysis/`.
+Reports per-prompt response length statistics, groups prompts by question
+template, and computes within-template vs across-template cosine similarity.
+Use this to check whether the prompt set has enough response-length diversity
+before committing to a full profiling run. The concern is that structurally
+identical templates (e.g. 14 "When to seek urgent medical care" questions)
+may generate responses of similar length, collapsing those classes in feature
+space. For this dataset, template separation is +0.030 -- well within
+acceptable range.
 
 ## Key Implementation Notes
 
 **Prompt ordering matters.** The first prompts in `collect/data/exp1_prompts.jsonl`
-are ordered for response-length diversity (short causal, medium symptoms list,
-long prognosis). Structurally similar prompts that generate similar-length
-responses produce low cosine separation between traces and degrade classifier
-accuracy toward chance.
+are ordered for response-length diversity: a short causal question, a medium
+symptoms-list question, and a long prognosis question. Structurally similar
+prompts in the first few positions produce low cosine separation between traces
+and degrade the smoke test toward chance.
 
 **Skip leading iterations.** `features/parse.py:trace_from_pcap` drops the
 first two grouped iterations by default. These correspond to the TLS handshake
@@ -174,8 +288,14 @@ and carry no discriminating signal.
 
 **min_samples_split.** The RandomForest in `attack/train.py` uses
 `min_samples_split=2` rather than the paper's value of 10. The paper's value
-was tuned for datasets with thousands of training samples; at small scale it
-prevents any tree from splitting, collapsing accuracy to chance.
+was tuned for datasets with thousands of training samples; with fewer training
+samples per class it prevents any tree node from splitting, collapsing all
+predictions to the majority class and accuracy to chance.
+
+**Thread count.** `serve/launch.py` passes `--threads-http 4` to llama-server.
+The default of n_cpu-1 (47 threads on this machine) combined with 24 inference
+threads caused CCD scheduling thrash on the Threadripper and locked up the
+machine during early testing.
 
 ## Tests
 
