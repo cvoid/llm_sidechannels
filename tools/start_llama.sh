@@ -6,5 +6,6 @@ llama-server \
     --spec-draft-n-max 5 \
     --ctx-size 4096 \
     --cont-batching \
+    --threads-http 4 \
     2>&1 | tee logs/llama.log
 
