@@ -21,12 +21,13 @@ def profile_one(
     host: str,
     port: int = 8443,
     iface: str = "lo",
-    bpf_filter: str = "tcp port 8443",
+    bpf_filter: str | None = None,
     model: str = "qwen2.5:7b-instruct-q4_K_M",
     system_prompt: str = "",
 ) -> Path:
     pcap_path = out_dir / f"prompt_{prompt_id:03d}_run_{run_id:03d}.pcap"
-    proc = capture.start(iface, pcap_path, bpf_filter)
+    effective_filter = bpf_filter if bpf_filter is not None else f"tcp port {port}"
+    proc = capture.start(iface, pcap_path, effective_filter)
     time.sleep(0.1)  # let tcpdump bind before the request goes out
     try:
         query.send(prompt, host, port, temperature, system_prompt=system_prompt, model=model)
@@ -44,7 +45,7 @@ def profile_all(
     host: str,
     port: int = 8443,
     iface: str = "lo",
-    bpf_filter: str = "tcp port 8443",
+    bpf_filter: str | None = None,
     model: str = "qwen2.5:7b-instruct-q4_K_M",
     system_prompt: str = "",
 ) -> Path:
