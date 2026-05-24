@@ -1,4 +1,8 @@
-# LLM Side-Channel Experiment Rig
+# LLM Side-Channels
+
+Validation of side-channel attacks against LLMs and the corresponding defenses.
+
+## LLM Side-Channel Experiment Rig
 
 Passive network side-channel attacks on streaming LLMs. This repo reproduces
 the core query-fingerprinting experiment from Wei et al. (arXiv:2411.01076)
