@@ -136,6 +136,33 @@ block fills or a ~64ms retirement timer fires. Short responses can complete
 before any block retires, yielding zero captured packets. `--immediate-mode`
 forces per-packet delivery.
 
+## Dependencies
+
+**System packages** (installed by `tools/setup_once.sh`):
+- `tcpdump` -- packet capture; requires the running user to be in the `pcap`
+  group or have `CAP_NET_RAW`
+- `nginx` -- TLS termination reverse proxy
+- `llama-server` -- from [llama.cpp](https://github.com/ggerganov/llama.cpp);
+  must be on `$PATH`
+
+**Models** (pulled via ollama, paths copied into `tools/start_llama.sh`):
+- `qwen2.5:7b-instruct-q4_K_M` -- target model (~4.7 GB)
+- `qwen2.5:0.5b-instruct-q8_0` -- draft model for speculative decoding (~530 MB)
+
+**Python packages** (managed by [uv](https://github.com/astral-sh/uv), declared in `pyproject.toml`):
+
+| Package | Use |
+|---------|-----|
+| `scapy` | Offline pcap parsing |
+| `httpx` | HTTPS streaming client for LLM queries |
+| `aiohttp` | Async HTTP server/client for the defense proxy |
+| `scikit-learn` | RandomForest classifier |
+| `numpy` | Feature array construction |
+| `pandas` | TPQ sweep result tables |
+| `lightgbm` | Alternative classifier (next after RandomForest) |
+
+Dev extras (`uv sync --group dev`): `pytest`, `mypy`, `pytest-mock`.
+
 ## Hardware
 
 - AMD Threadripper (48 logical cores), 64 GB RAM
