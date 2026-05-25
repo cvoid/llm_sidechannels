@@ -58,6 +58,9 @@ hidden=128 per direction).
 
 ### TPQ sweep -- accuracy vs traces per query
 
+![TPQ sweep -- three classifiers](analysis/fig1_tpq_classifiers.png)
+![TPQ sweep -- RF across temperatures](analysis/fig2_tpq_temperatures.png)
+
 **Random Forest**
 
 | temp | tpq=5 | tpq=10 | tpq=20 | tpq=30 |
@@ -123,6 +126,8 @@ making per-iteration byte counts noisier across repeated captures of the same
 prompt.
 
 ### Defense evaluation
+
+![Defense comparison](analysis/fig3_defense_comparison.png)
 
 All defenses evaluated at temp=0.3, tpq=30, RF classifier. Overhead is
 mean server-to-client bytes relative to undefended baseline.

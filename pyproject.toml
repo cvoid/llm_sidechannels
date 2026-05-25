@@ -12,6 +12,7 @@ dependencies = [
     "aiohttp>=3.9",
     # torch is installed separately via the PyTorch CUDA index:
     #   uv pip install torch --index-url https://download.pytorch.org/whl/cu121
+    "matplotlib>=3.10.9",
 ]
 
 [dependency-groups]
