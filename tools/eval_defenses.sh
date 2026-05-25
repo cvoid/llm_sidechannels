@@ -36,6 +36,8 @@ curl -sk https://server.local:8444/ > /dev/null \
     || { echo "ERROR: nginx :8444 not responding -- is nginx_defend.conf installed?"; exit 1; }
 curl -sk https://server.local:8445/ > /dev/null \
     || { echo "ERROR: nginx :8445 not responding -- is nginx_defend.conf installed?"; exit 1; }
+curl -sk https://server.local:8446/ > /dev/null \
+    || { echo "ERROR: nginx :8446 not responding -- is nginx_defend.conf installed?"; exit 1; }
 
 run_config() {
     local name="$1"
@@ -84,8 +86,13 @@ run_config "pad_rand128"    8445 "uv run python -m defend.pad --mode random --ma
 run_config "pad_rand256"    8445 "uv run python -m defend.pad --mode random --max-pad 256  2>/dev/null"
 run_config "pad_rand512"    8445 "uv run python -m defend.pad --mode random --max-pad 512  2>/dev/null"
 
-# Fixed padding
+# Fixed padding -- 1500 and 2048 (2048 covers 100% of observed event sizes)
 run_config "pad_fixed1500"  8445 "uv run python -m defend.pad --mode fixed --fixed-size 1500  2>/dev/null"
+run_config "pad_fixed2048"  8445 "uv run python -m defend.pad --mode fixed --fixed-size 2048  2>/dev/null"
+
+# CBR chunk streaming -- burst (all-at-once) and fixed rate
+run_config "cbr_burst"      8446 "uv run python -m defend.cbr --chunk-size 512 --interval-ms 0   2>/dev/null"
+run_config "cbr_512_20ms"   8446 "uv run python -m defend.cbr --chunk-size 512 --interval-ms 20  2>/dev/null"
 
 echo "==> All profiling complete. Generating comparison table..."
 uv run python tools/compare_defenses.py \

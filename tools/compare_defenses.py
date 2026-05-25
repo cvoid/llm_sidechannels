@@ -30,14 +30,17 @@ from features.parse import extract_records
 # server_port is the nginx port the client connects to, used to filter
 # server->client packets in the pcaps.
 CONFIGS: list[tuple[str, str, int]] = [
-    ("undefended",      "data/raw_clean",                 8443),
-    ("agg batch=2",     "data/raw_defend/agg_batch2",     8444),
-    ("agg batch=4",     "data/raw_defend/agg_batch4",     8444),
-    ("agg batch=8",     "data/raw_defend/agg_batch8",     8444),
-    ("pad rand=128",    "data/raw_defend/pad_rand128",     8445),
-    ("pad rand=256",    "data/raw_defend/pad_rand256",     8445),
-    ("pad rand=512",    "data/raw_defend/pad_rand512",     8445),
-    ("pad fixed=1500",  "data/raw_defend/pad_fixed1500",   8445),
+    ("undefended",      "data/raw_clean",                   8443),
+    ("agg batch=2",     "data/raw_defend/agg_batch2",       8444),
+    ("agg batch=4",     "data/raw_defend/agg_batch4",       8444),
+    ("agg batch=8",     "data/raw_defend/agg_batch8",       8444),
+    ("pad rand=128",    "data/raw_defend/pad_rand128",       8445),
+    ("pad rand=256",    "data/raw_defend/pad_rand256",       8445),
+    ("pad rand=512",    "data/raw_defend/pad_rand512",       8445),
+    ("pad fixed=1500",  "data/raw_defend/pad_fixed1500",     8445),
+    ("pad fixed=2048",  "data/raw_defend/pad_fixed2048",     8445),
+    ("cbr burst",       "data/raw_defend/cbr_burst",         8446),
+    ("cbr 512/20ms",    "data/raw_defend/cbr_512_20ms",      8446),
 ]
 
 
