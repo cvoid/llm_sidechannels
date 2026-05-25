@@ -147,12 +147,13 @@ iterations produces one packet whose total bytes still correlate with the
 sum of the N per-iteration token counts.
 
 **Packet padding** (random or fixed size) is also ineffective: max 4.4%
-reduction even at max_pad=128. The observed iteration sizes range 331-2027
-bytes (p99=1997B); adding up to 512 bytes of noise to a 1700-byte signal
-range achieves negligible masking. Padding to the maximum observed size
-(fixed=2048) still only reduces accuracy by 2% because TCP fragmentation
-splits large padded events into variable-size segments, restoring variance
-at the packet level even when SSE events are constant.
+reduction even at max_pad=128. Padding is applied at the SSE event level,
+but each decode iteration produces N SSE events (one per accepted speculative
+token). The feature extractor sums all bytes within window_ms=3.5ms into a
+single per-iteration observation, so the measured value is N x padding_size.
+This still encodes the acceptance count N -- padding scales the signal but
+does not destroy it. Fixed=2048 covers the full observed event-size range yet
+only reduces accuracy by 2% for exactly this reason.
 
 **CBR (constant-bit-rate) streaming** is the only effective defense: both
 variants reduce accuracy from 95.6% to 2.0% (chance for 50 classes).
@@ -323,7 +324,7 @@ bash tools/calibrate.sh
 ```
 
 Captures one query and computes `window_ms`: the gap threshold that separates
-within-iteration TCP fragmentation (sub-millisecond) from between-iteration
+within-iteration inter-event gaps (sub-millisecond) from between-iteration
 inference pauses (tens of milliseconds). The algorithm finds the largest ratio
 between consecutive sorted inter-packet gaps, then returns the geometric mean
 of the bounding gaps. The value is hardware-dependent and should be
