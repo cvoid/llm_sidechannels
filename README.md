@@ -122,6 +122,52 @@ The accuracy degradation at higher temperatures is expected: at temperature
 making per-iteration byte counts noisier across repeated captures of the same
 prompt.
 
+### Defense evaluation
+
+All defenses evaluated at temp=0.3, tpq=30, RF classifier. Overhead is
+mean server-to-client bytes relative to undefended baseline.
+
+| Defense | Accuracy | Reduction | Overhead |
+|---------|----------|-----------|----------|
+| undefended | 0.956 | -- | 1.00x |
+| agg batch=2 | 0.940 | 0.016 | 0.96x |
+| agg batch=4 | 0.936 | 0.020 | 0.96x |
+| agg batch=8 | 0.944 | 0.012 | 0.96x |
+| pad rand=128 | 0.912 | 0.044 | 1.17x |
+| pad rand=256 | 0.932 | 0.024 | 1.18x |
+| pad rand=512 | 0.936 | 0.020 | 1.18x |
+| pad fixed=1500 | 0.932 | 0.024 | 1.17x |
+| pad fixed=2048 | 0.936 | 0.020 | 1.17x |
+| **cbr burst** | **0.020** | **0.936** | **0.89x** |
+| **cbr 512/20ms** | **0.020** | **0.936** | **0.91x** |
+
+**Token aggregation** (batching N SSE events) is nearly useless: max 2%
+reduction at any batch size. Our byte-size signal is additive -- batching N
+iterations produces one packet whose total bytes still correlate with the
+sum of the N per-iteration token counts.
+
+**Packet padding** (random or fixed size) is also ineffective: max 4.4%
+reduction even at max_pad=128. The observed iteration sizes range 331-2027
+bytes (p99=1997B); adding up to 512 bytes of noise to a 1700-byte signal
+range achieves negligible masking. Padding to the maximum observed size
+(fixed=2048) still only reduces accuracy by 2% because TCP fragmentation
+splits large padded events into variable-size segments, restoring variance
+at the packet level even when SSE events are constant.
+
+**CBR (constant-bit-rate) streaming** is the only effective defense: both
+variants reduce accuracy from 95.6% to 2.0% (chance for 50 classes).
+`cbr burst` buffers the complete response and sends everything at once;
+the feature extractor collapses all bytes into a single iteration and the
+only remaining signal is total response length, which is not sufficient for
+50-class classification. `cbr 512/20ms` sends 512-byte chunks at 20ms
+intervals, producing a flat constant-value feature vector. Both destroy the
+per-iteration structure that the classifier depends on.
+
+CBR costs no extra bandwidth (0.89-0.91x overhead vs 1.17-1.18x for
+padding) but adds latency equal to full generation time -- the client
+receives nothing until the model finishes generating. For a 200-token
+response at ~15 tokens/sec that is roughly 13 seconds of added latency.
+
 ## How It Works
 
 ### The signal source
