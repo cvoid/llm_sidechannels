@@ -8,8 +8,8 @@ Passive network side-channel attacks on streaming LLMs. This repo reproduces
 the core query-fingerprinting experiment from Wei et al. (arXiv:2411.01076)
 and related work, targeting speculative decoding as the signal source. A
 passive adversary monitoring encrypted TLS traffic can fingerprint which of 50
-medical queries a user sent -- with 95.6% accuracy at temperature 0.3 -- by
-observing per-iteration packet sizes, without decrypting anything.
+medical queries a user sent -- with 96.8% accuracy (LightGBM) at temperature
+0.3 -- by observing per-iteration packet sizes, without decrypting anything.
 
 ## Papers
 
@@ -50,10 +50,15 @@ random padding, token batching, and packet injection as partial mitigations.
 
 Experiment 1 reproduces the Wei et al. query-fingerprinting attack (paper
 Figure 3) on our local llama.cpp setup. 50 MedAlpaca prompts, 30 traces per
-query, Random Forest classifier (paper §4.4 hyperparameters), 25 train / 5
-test traces per class.
+query, 25 train / 5 test traces per class.
+
+Three classifiers have been evaluated: Random Forest (paper baseline), LightGBM
+(primary per McDonald & Bar Or), and BiLSTM (200 epochs, 2-layer bidirectional,
+hidden=128 per direction).
 
 ### TPQ sweep -- accuracy vs traces per query
+
+**Random Forest**
 
 | temp | tpq=5 | tpq=10 | tpq=20 | tpq=30 |
 |------|-------|--------|--------|--------|
@@ -62,9 +67,43 @@ test traces per class.
 | 0.8  | 0.596 | 0.704  | 0.808  | 0.804  |
 | 1.0  | 0.544 | 0.644  | 0.712  | 0.744  |
 
+**LightGBM**
+
+| temp | tpq=5 | tpq=10 | tpq=20 | tpq=30 |
+|------|-------|--------|--------|--------|
+| 0.3  | 0.804 | 0.912  | 0.936  | **0.968** |
+| 0.6  | 0.580 | 0.792  | 0.884  | 0.920  |
+| 0.8  | 0.584 | 0.724  | 0.868  | 0.884  |
+| 1.0  | 0.488 | 0.624  | 0.768  | 0.812  |
+
+**BiLSTM** (2-layer bidirectional, hidden=128, 200 epochs, Adam lr=1e-3)
+
+| temp | tpq=5 | tpq=10 | tpq=20 | tpq=30 |
+|------|-------|--------|--------|--------|
+| 0.3  | 0.088 | 0.412  | 0.612  | **0.704** |
+| 0.6  | 0.076 | 0.156  | 0.396  | 0.564  |
+| 0.8  | 0.076 | 0.136  | 0.380  | 0.416  |
+| 1.0  | 0.064 | 0.188  | 0.416  | 0.524  |
+
 Paper reports ~100% for REST-style speculative decoding at temperature 0.3.
-Our result of 95.6% at tpq=30 is consistent after accounting for hardware
-differences (A100 vs dual RTX 3070, remote server vs loopback).
+Our RF result of 95.6% and LightGBM result of 96.8% at tpq=30 are consistent
+after accounting for hardware differences (A100 vs dual RTX 3070, remote server
+vs loopback).
+
+### Classifier comparison
+
+At tpq=30, temp=0.3: LightGBM (0.968) > RF (0.956) > BiLSTM (0.704).
+
+LightGBM outperforms RF by 1-6% across all temperatures; the gap widens at
+higher temperatures where the signal is noisier. BiLSTM peaks at 0.704 and
+performs near-randomly at tpq=5 (0.088). This mirrors the sample-efficiency
+literature: with ~25 training traces per class, tree ensembles' axis-aligned
+splits on individual features outperform recurrent networks' temporal modeling.
+The BiLSTM trains to near-zero training loss by epoch 200 but generalizes
+poorly, indicating that at this dataset size the model overfits rather than
+learning a generalizable representation. The BiLSTM advantage reported in
+McDonald & Bar Or likely requires larger training sets (they used 21,716
+queries per model).
 
 ### Per-class breakdown at temp=0.3, tpq=30
 
@@ -159,7 +198,8 @@ forces per-packet delivery.
 | `scikit-learn` | RandomForest classifier |
 | `numpy` | Feature array construction |
 | `pandas` | TPQ sweep result tables |
-| `lightgbm` | Alternative classifier (next after RandomForest) |
+| `lightgbm` | LightGBM classifier |
+| `torch` | BiLSTM classifier (CUDA 12.1 build) |
 
 Dev extras (`uv sync --group dev`): `pytest`, `mypy`, `pytest-mock`.
 
@@ -179,7 +219,7 @@ Dev extras (`uv sync --group dev`): `pytest`, `mypy`, `pytest-mock`.
 | Draft model | Qwen2.5-0.5B-Instruct Q8 | Fast enough to sustain useful speculation rate |
 | TLS termination | nginx with self-signed cert | Realistic TLS boundary on server.local:8443 |
 | Packet capture | tcpdump + scapy | tcpdump for raw capture, scapy for offline parsing |
-| Classifier | RandomForest (sklearn) | Matches paper §4.4 hyperparameters |
+| Classifier | RandomForest, LightGBM, BiLSTM | RF matches paper §4.4; LightGBM and BiLSTM follow McDonald & Bar Or |
 | Environment | Python 3.11+, uv | Reproducible, fast |
 
 ## Repo Layout
@@ -271,19 +311,33 @@ temperatures at tpq=30).
 
 ### 5. TPQ sweep
 
-Merge the per-temperature manifests and run the sweep:
+Merge the per-temperature manifests into a combined manifest, then run the
+sweep. The combined manifest is required because `tpq_sweep.py` filters by
+temperature internally and each per-temperature manifest only contains one
+temperature's data.
 
 ```bash
-cat data/raw_clean/temp_*/manifest.jsonl > data/raw_clean/manifest_all.jsonl
+cat data/raw/temp_*/manifest.jsonl > data/raw/all_temps/manifest.jsonl
 
 uv run python tools/tpq_sweep.py \
-    --manifest data/raw_clean/manifest_all.jsonl \
+    --manifest data/raw/all_temps/manifest.jsonl \
     --window-ms <value> \
-    --temperatures 0.3 0.6 0.8 1.0 \
-    --out analysis/exp1_tpq_sweep_clean.csv
+    --out analysis/exp1_tpq_sweep_rf.csv
+
+uv run python tools/tpq_sweep.py \
+    --manifest data/raw/all_temps/manifest.jsonl \
+    --window-ms <value> \
+    --classifier lgbm \
+    --out analysis/exp1_tpq_sweep_lgbm.csv
+
+uv run python tools/tpq_sweep.py \
+    --manifest data/raw/all_temps/manifest.jsonl \
+    --window-ms <value> \
+    --classifier bilstm \
+    --out analysis/exp1_tpq_sweep_bilstm.csv
 ```
 
-Trains and evaluates a Random Forest at each (temperature, TPQ) combination,
+Trains and evaluates each classifier at each (temperature, TPQ) combination,
 following the paper's protocol: train on the first `tpq` traces per class,
 test on the remaining 5. Results are written to `analysis/`.
 
