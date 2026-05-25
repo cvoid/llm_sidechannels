@@ -31,11 +31,16 @@ def main() -> None:
                         help="TPQ values to sweep (default: 5 10 20 30)")
     parser.add_argument("--temperatures", type=float, nargs="+", default=None,
                         help="temperatures to evaluate (default: all in manifest)")
+    parser.add_argument("--classifier", choices=["rf", "lgbm"], default="rf",
+                        help="classifier to use: rf (RandomForest) or lgbm (LightGBM) (default: rf)")
     parser.add_argument("--out", type=Path, default=None,
                         help="CSV output path (default: analysis/exp1_tpq_sweep_<dir>.csv)")
     args = parser.parse_args()
 
     temperatures = args.temperatures or [0.3, 0.6, 0.8, 1.0]
+
+    from attack.train import fit, fit_lgbm
+    fit_fn = fit_lgbm if args.classifier == "lgbm" else fit
 
     df = tpq_sweep(
         manifest_path=args.manifest,
@@ -43,10 +48,11 @@ def main() -> None:
         temperatures=temperatures,
         trace_length=args.trace_length,
         window_ms=args.window_ms,
+        fit_fn=fit_fn,
     )
     print(df.to_string(index=False))
 
-    out = args.out or Path("analysis") / f"exp1_tpq_sweep_{args.manifest.parent.name}.csv"
+    out = args.out or Path("analysis") / f"exp1_tpq_sweep_{args.manifest.parent.name}_{args.classifier}.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out, index=False)
     print(f"\nsaved → {out}")

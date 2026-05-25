@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
 from features import build as _build
 from . import dataset as _dataset, train as _train
+from .train import Classifier
 
 
 def score(
-    clf: RandomForestClassifier,
+    clf: Classifier,
     X_test: np.ndarray,
     y_test: np.ndarray,
 ) -> dict[str, float]:
@@ -30,7 +31,10 @@ def tpq_sweep(
     trace_length: int,
     window_ms: float,
     server_port: int = 8443,
+    fit_fn: Callable[[np.ndarray, np.ndarray], Classifier] | None = None,
 ) -> pd.DataFrame:
+    if fit_fn is None:
+        fit_fn = _train.fit
     rows: list[dict[str, object]] = []
     for temperature in temperatures:
         X, y = _build.build_dataset(
@@ -38,7 +42,7 @@ def tpq_sweep(
         )
         for tpq in tpq_values:
             X_train, X_test, y_train, y_test = _dataset.split(X, y, train_tpq=tpq)
-            clf = _train.fit(X_train, y_train)
+            clf = fit_fn(X_train, y_train)
             metrics = score(clf, X_test, y_test)
             rows.append({"temperature": temperature, "tpq": tpq, **metrics})
     return pd.DataFrame(rows)

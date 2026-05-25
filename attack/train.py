@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
+from typing import Union
 
 import numpy as np
+from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
+
+Classifier = Union[RandomForestClassifier, LGBMClassifier]
 
 
 def build_rf() -> RandomForestClassifier:
@@ -25,18 +29,41 @@ def build_rf() -> RandomForestClassifier:
     )
 
 
+def build_lgbm() -> LGBMClassifier:
+    # Parameters follow Whisper Leak (McDonald & Bar Or, arXiv:2511.03675)
+    # which uses LightGBM as its primary classifier. num_leaves=63 gives
+    # richer trees than the default 31 for a 50-class problem; 500 rounds
+    # with learning_rate=0.05 balances accuracy against overfitting at
+    # tpq=25 training samples per class.
+    return LGBMClassifier(
+        n_estimators=500,
+        num_leaves=63,
+        learning_rate=0.05,
+        n_jobs=-1,
+        random_state=0,
+        verbose=-1,
+    )
+
+
 def fit(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
     clf = build_rf()
     clf.fit(X_train, y_train)
     return clf
 
 
-def save(clf: RandomForestClassifier, path: Path) -> None:
+def fit_lgbm(X_train: np.ndarray, y_train: np.ndarray) -> LGBMClassifier:
+    clf = build_lgbm()
+    feature_names = [f"iter_{i}" for i in range(X_train.shape[1])]
+    clf.fit(X_train, y_train, feature_name=feature_names)
+    return clf
+
+
+def save(clf: Classifier, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         pickle.dump(clf, f)
 
 
-def load(path: Path) -> RandomForestClassifier:
+def load(path: Path) -> Classifier:
     with open(path, "rb") as f:
         return pickle.load(f)  # type: ignore[no-any-return]
