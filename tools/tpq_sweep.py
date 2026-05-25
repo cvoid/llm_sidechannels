@@ -22,7 +22,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--manifest", type=Path, required=True,
-                        help="path to manifest.jsonl produced by tools/profile.py")
+                        help="path to manifest.jsonl produced by tools/run_profile.py")
     parser.add_argument("--window-ms", type=float, required=True,
                         help="iteration grouping window from tools/calibrate.sh")
     parser.add_argument("--trace-length", type=int, default=100,

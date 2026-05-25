@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Capture one query and compute window_ms for the current hardware setup.
 # Run from the repo root with llama-server already running.
-# Prints window_ms — pass it to tools/profile.py and tools/tpq_sweep.py.
+# Prints window_ms — pass it to tools/run_profile.py and tools/tpq_sweep.py.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -62,5 +62,5 @@ if len(records) < 10:
     print('WARNING: low packet count — speculative decoding may not be active.')
     print('  Check: grep -i draft logs/llama.log')
 else:
-    print('Use --window-ms', round(window_ms, 2), 'with tools/smoke_test.py and tools/profile.py')
+    print('Use --window-ms', round(window_ms, 2), 'with tools/smoke_test.py and tools/run_profile.py')
 "

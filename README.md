@@ -258,10 +258,10 @@ near chance, check pcap sizes (`ls -lh data/smoke/*.pcap`) and recalibrate.
 ### 4. Full profiling
 
 ```bash
-uv run python tools/profile.py --temperature 0.3 --tpq 30
-uv run python tools/profile.py --temperature 0.6 --tpq 30
-uv run python tools/profile.py --temperature 0.8 --tpq 30
-uv run python tools/profile.py --temperature 1.0 --tpq 30
+uv run python tools/run_profile.py --temperature 0.3 --tpq 30
+uv run python tools/run_profile.py --temperature 0.6 --tpq 30
+uv run python tools/run_profile.py --temperature 0.8 --tpq 30
+uv run python tools/run_profile.py --temperature 1.0 --tpq 30
 ```
 
 Captures `n_prompts * tpq` pcap files and writes a `manifest.jsonl` per

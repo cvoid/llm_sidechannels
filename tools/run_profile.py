@@ -4,9 +4,9 @@ Captures one pcap per (prompt, run) pair and writes a manifest.jsonl.
 Run from the repo root with llama-server already running.
 
 Examples:
-    uv run python tools/profile.py --temperature 0.3 --tpq 30
-    uv run python tools/profile.py --temperature 0.6 --tpq 30
-    uv run python tools/profile.py --temperature 0.3 --tpq 5 --prompts 3  # quick test
+    uv run python tools/run_profile.py --temperature 0.3 --tpq 30
+    uv run python tools/run_profile.py --temperature 0.6 --tpq 30
+    uv run python tools/run_profile.py --temperature 0.3 --tpq 5 --prompts 3  # quick test
 """
 from __future__ import annotations
 

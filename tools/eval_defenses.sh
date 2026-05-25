@@ -60,7 +60,7 @@ run_config() {
     sleep 1
 
     echo "==> $name: profiling 50 prompts × $TPQ runs..."
-    uv run python tools/profile.py \
+    uv run python tools/run_profile.py \
         --temperature "$TEMP" \
         --tpq "$TPQ" \
         --port "$port" \
