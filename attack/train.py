@@ -8,7 +8,9 @@ import numpy as np
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-Classifier = Union[RandomForestClassifier, LGBMClassifier]
+from .bilstm import BiLSTMClassifier
+
+Classifier = Union[RandomForestClassifier, LGBMClassifier, BiLSTMClassifier]
 
 
 def build_rf() -> RandomForestClassifier:

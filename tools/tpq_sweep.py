@@ -31,8 +31,14 @@ def main() -> None:
                         help="TPQ values to sweep (default: 5 10 20 30)")
     parser.add_argument("--temperatures", type=float, nargs="+", default=None,
                         help="temperatures to evaluate (default: all in manifest)")
-    parser.add_argument("--classifier", choices=["rf", "lgbm"], default="rf",
-                        help="classifier to use: rf (RandomForest) or lgbm (LightGBM) (default: rf)")
+    parser.add_argument("--classifier", choices=["rf", "lgbm", "bilstm"], default="rf",
+                        help="classifier to use: rf (RandomForest), lgbm (LightGBM), or bilstm (default: rf)")
+    parser.add_argument("--bilstm-epochs", type=int, default=50,
+                        help="BiLSTM training epochs (default: 50)")
+    parser.add_argument("--bilstm-hidden", type=int, default=128,
+                        help="BiLSTM hidden units per direction (default: 128)")
+    parser.add_argument("--bilstm-device", type=str, default=None,
+                        help="torch device for BiLSTM, e.g. cuda:0 (default: auto)")
     parser.add_argument("--out", type=Path, default=None,
                         help="CSV output path (default: analysis/exp1_tpq_sweep_<dir>.csv)")
     args = parser.parse_args()
@@ -40,7 +46,19 @@ def main() -> None:
     temperatures = args.temperatures or [0.3, 0.6, 0.8, 1.0]
 
     from attack.train import fit, fit_lgbm
-    fit_fn = fit_lgbm if args.classifier == "lgbm" else fit
+    from attack.bilstm import fit_bilstm
+    import functools
+    if args.classifier == "lgbm":
+        fit_fn = fit_lgbm
+    elif args.classifier == "bilstm":
+        fit_fn = functools.partial(
+            fit_bilstm,
+            epochs=args.bilstm_epochs,
+            hidden=args.bilstm_hidden,
+            device=args.bilstm_device,
+        )
+    else:
+        fit_fn = fit
 
     df = tpq_sweep(
         manifest_path=args.manifest,
