@@ -62,7 +62,7 @@ run_config() {
     sleep 1
 
     echo "==> $name: profiling 50 prompts × $TPQ runs..."
-    uv run python tools/run_profile.py \
+    .venv/bin/python tools/run_profile.py \
         --temperature "$TEMP" \
         --tpq "$TPQ" \
         --port "$port" \
@@ -77,25 +77,25 @@ run_config() {
 }
 
 # Aggregation sweep
-run_config "agg_batch2"     8444 "uv run python -m defend.aggregate --batch-size 2  2>/dev/null"
-run_config "agg_batch4"     8444 "uv run python -m defend.aggregate --batch-size 4  2>/dev/null"
-run_config "agg_batch8"     8444 "uv run python -m defend.aggregate --batch-size 8  2>/dev/null"
+run_config "agg_batch2"     8444 ".venv/bin/python -m defend.aggregate --batch-size 2  2>/dev/null"
+run_config "agg_batch4"     8444 ".venv/bin/python -m defend.aggregate --batch-size 4  2>/dev/null"
+run_config "agg_batch8"     8444 ".venv/bin/python -m defend.aggregate --batch-size 8  2>/dev/null"
 
 # Random padding sweep
-run_config "pad_rand128"    8445 "uv run python -m defend.pad --mode random --max-pad 128  2>/dev/null"
-run_config "pad_rand256"    8445 "uv run python -m defend.pad --mode random --max-pad 256  2>/dev/null"
-run_config "pad_rand512"    8445 "uv run python -m defend.pad --mode random --max-pad 512  2>/dev/null"
+run_config "pad_rand128"    8445 ".venv/bin/python -m defend.pad --mode random --max-pad 128  2>/dev/null"
+run_config "pad_rand256"    8445 ".venv/bin/python -m defend.pad --mode random --max-pad 256  2>/dev/null"
+run_config "pad_rand512"    8445 ".venv/bin/python -m defend.pad --mode random --max-pad 512  2>/dev/null"
 
 # Fixed padding -- 1500 and 2048 (2048 covers 100% of observed event sizes)
-run_config "pad_fixed1500"  8445 "uv run python -m defend.pad --mode fixed --fixed-size 1500  2>/dev/null"
-run_config "pad_fixed2048"  8445 "uv run python -m defend.pad --mode fixed --fixed-size 2048  2>/dev/null"
+run_config "pad_fixed1500"  8445 ".venv/bin/python -m defend.pad --mode fixed --fixed-size 1500  2>/dev/null"
+run_config "pad_fixed2048"  8445 ".venv/bin/python -m defend.pad --mode fixed --fixed-size 2048  2>/dev/null"
 
 # CBR chunk streaming -- burst (all-at-once) and fixed rate
-run_config "cbr_burst"      8446 "uv run python -m defend.cbr --chunk-size 512 --interval-ms 0   2>/dev/null"
-run_config "cbr_512_20ms"   8446 "uv run python -m defend.cbr --chunk-size 512 --interval-ms 20  2>/dev/null"
+run_config "cbr_burst"      8446 ".venv/bin/python -m defend.cbr --chunk-size 512 --interval-ms 0   2>/dev/null"
+run_config "cbr_512_20ms"   8446 ".venv/bin/python -m defend.cbr --chunk-size 512 --interval-ms 20  2>/dev/null"
 
 echo "==> All profiling complete. Generating comparison table..."
-uv run python tools/compare_defenses.py \
+.venv/bin/python tools/compare_defenses.py \
     --window-ms "$WINDOW_MS" \
     --tpq "$TPQ" \
     --out analysis/defense_comparison.csv

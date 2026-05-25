@@ -10,7 +10,8 @@ dependencies = [
     "pandas>=2.2",
     "lightgbm>=4.3",
     "aiohttp>=3.9",
-    "torch>=2.3",
+    # torch is installed separately via the PyTorch CUDA index:
+    #   uv pip install torch --index-url https://download.pytorch.org/whl/cu121
 ]
 
 [dependency-groups]
