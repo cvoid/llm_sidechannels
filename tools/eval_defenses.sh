@@ -42,13 +42,9 @@ curl -sk https://server.local:8446/ > /dev/null \
 kill_port() {
     # Kill any process currently listening on the given TCP port.
     local port="$1"
-    local pid
-    pid=$(ss -tlnp "sport = :$port" 2>/dev/null \
-          | awk 'NR>1 && /LISTEN/ {match($0,/pid=([0-9]+)/,a); if(a[1]) print a[1]}' \
-          | head -1)
-    if [[ -n "$pid" ]]; then
-        echo "==> killing stale process $pid on port $port"
-        kill "$pid" 2>/dev/null || true
+    if fuser "${port}/tcp" &>/dev/null; then
+        echo "==> killing stale process on port $port"
+        fuser -k "${port}/tcp" 2>/dev/null || true
         sleep 0.5
     fi
 }
