@@ -1,16 +1,22 @@
 """Generate publication figures from experiment 1 results.
 
-Produces three figures saved to analysis/:
-  fig1_tpq_classifiers.png  -- accuracy vs TPQ, three classifiers at temp=0.3
-  fig2_tpq_temperatures.png -- accuracy vs TPQ, RF across four temperatures
+Produces figures saved to analysis/:
+  fig1_tpq_classifiers.png   -- accuracy vs TPQ, three classifiers at temp=0.3
+  fig2_tpq_temperatures.png  -- accuracy vs TPQ, RF across four temperatures
   fig3_defense_comparison.png -- defense accuracy and bandwidth overhead
+  fig8_confusion_matrix.png  -- LightGBM confusion matrix at tpq=25, temp=0.3
+                                (requires --manifest and --window-ms)
 
 Example:
     uv run python tools/plot_results.py
+    uv run python tools/plot_results.py \\
+        --manifest data/raw_clean/manifest_all.jsonl --window-ms 3.5
 """
 from __future__ import annotations
 
 import argparse
+import json
+import re
 from pathlib import Path
 
 import matplotlib
@@ -183,11 +189,108 @@ def fig3_defense_comparison(out: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Figure 8: LightGBM confusion matrix at tpq=25, temp=0.3
+# ---------------------------------------------------------------------------
+
+_LABEL_PATTERNS: list[tuple[re.Pattern[str], int]] = [
+    (re.compile(r"What to expect if I have (.+?) \(Outlook/Prognosis\)\?"), 1),
+    (re.compile(r"What are the (?:symptoms|causes) of (.+?)\?"), 1),
+    (re.compile(r"What causes (.+?)\?"), 1),
+    (re.compile(r"Who is at highest risk for (.+?)\?"), 1),
+    (re.compile(r"When to seek urgent medical care when I have (.+?)\?"), 1),
+    (re.compile(r"How many children have (.+?)\?"), 1),
+]
+
+
+def _condition_name(text: str) -> str:
+    for pat, grp in _LABEL_PATTERNS:
+        m = pat.match(text)
+        if m:
+            return m.group(grp)
+    return text[:25]
+
+
+def fig8_confusion_matrix(manifest_path: Path, window_ms: float, out: Path) -> None:
+    from features.build import build_dataset
+    from attack.dataset import split
+    from attack.train import fit_lgbm
+    from sklearn.metrics import confusion_matrix
+
+    prompts: dict[int, str] = {}
+    prompts_file = Path("collect/data/exp1_prompts.jsonl")
+    with open(prompts_file) as f:
+        for line in f:
+            e: dict[str, object] = json.loads(line)
+            prompts[int(str(e["id"]))] = str(e["text"])
+
+    X, y = build_dataset(manifest_path, trace_length=100, window_ms=window_ms,
+                         server_port=8443, temperature=0.3)
+    X_train, X_test, y_train, y_test = split(X, y, train_tpq=25)
+    clf = fit_lgbm(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+    classes = sorted(int(c) for c in np.unique(y).tolist())
+    labels = [_condition_name(prompts[c]) for c in classes]
+    cm = confusion_matrix(y_test, y_pred, labels=classes)
+
+    fig, ax = plt.subplots(figsize=(14, 12))
+    # Show only cells with non-zero values; diagonal in grey, errors in red.
+    diag_mask = np.eye(len(classes), dtype=bool)
+    off_diag = cm.copy()
+    off_diag[diag_mask] = 0
+
+    # Background: diagonal (correct) in light blue, zeros white
+    bg = np.zeros_like(cm, dtype=float)
+    bg[diag_mask] = cm[diag_mask].astype(float) / max(cm[diag_mask].max(), 1)
+    ax.imshow(bg, cmap="Blues", vmin=0, vmax=1, aspect="equal", interpolation="nearest")
+
+    # Overlay errors in red
+    if off_diag.max() > 0:
+        err_img = np.ma.masked_where(off_diag == 0, off_diag.astype(float))
+        ax.imshow(err_img, cmap="Reds", vmin=0, vmax=off_diag.max(),
+                  aspect="equal", interpolation="nearest")
+
+    # Annotate non-zero cells
+    for i in range(len(classes)):
+        for j in range(len(classes)):
+            val = cm[i, j]
+            if val > 0:
+                color = "white" if val > cm[diag_mask].max() * 0.6 else "black"
+                ax.text(j, i, str(val), ha="center", va="center",
+                        fontsize=6.5, color=color, fontweight="bold" if i != j else "normal")
+
+    n = len(classes)
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(labels, rotation=90, fontsize=7)
+    ax.set_yticklabels(labels, fontsize=7)
+    ax.set_xlabel("Predicted", fontsize=10)
+    ax.set_ylabel("True", fontsize=10)
+    total = int(cm.sum())
+    errors = int(off_diag.sum())
+    acc = (total - errors) / total
+    ax.set_title(
+        f"LightGBM confusion matrix (temp=0.3, tpq=25)\n"
+        f"{total} test samples, {errors} errors, {acc:.1%} accuracy",
+        fontsize=11,
+    )
+
+    fig.tight_layout()
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"saved -> {out}")
+
+
+# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out-dir", type=Path, default=Path("analysis"))
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="manifest.jsonl for fig8 confusion matrix")
+    parser.add_argument("--window-ms", type=float, default=None,
+                        help="iteration window for fig8 confusion matrix")
     args = parser.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -195,6 +298,10 @@ def main() -> None:
     fig1_tpq_classifiers(args.out_dir / "fig1_tpq_classifiers.png")
     fig2_tpq_temperatures(args.out_dir / "fig2_tpq_temperatures.png")
     fig3_defense_comparison(args.out_dir / "fig3_defense_comparison.png")
+
+    if args.manifest and args.window_ms:
+        fig8_confusion_matrix(args.manifest, args.window_ms,
+                              args.out_dir / "fig8_confusion_matrix.png")
 
 
 if __name__ == "__main__":

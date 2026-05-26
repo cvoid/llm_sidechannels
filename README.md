@@ -110,6 +110,10 @@ learning a generalizable representation. The BiLSTM advantage reported in
 McDonald & Bar Or likely requires larger training sets (they used 21,716
 queries per model).
 
+### Confusion matrix
+
+![LightGBM confusion matrix](analysis/fig8_confusion_matrix.png)
+
 ### Per-class breakdown at temp=0.3, tpq=30
 
 43 of 50 prompts classify perfectly. The 7 errors are concentrated in two

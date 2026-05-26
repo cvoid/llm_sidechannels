@@ -200,6 +200,9 @@ training, hold out 5 per class for testing. Sweep TPQ in {5, 10, 20, 25}.
 
 ### 4.4 Results
 
+Figure 8 shows the LightGBM confusion matrix at tpq=25, temp=0.3. The matrix
+is nearly diagonal; all 8 errors are visible as isolated red cells.
+
 **Table 1: Random Forest accuracy vs. temperature and TPQ.**
 
 | temp | tpq=5 | tpq=10 | tpq=20 | tpq=25 |
@@ -252,7 +255,7 @@ across repeated captures of the same prompt. At temperature 0.3, the draft
 achieves a high and stable acceptance rate, producing a tighter feature
 distribution per class.
 
-**Error structure.** At temp=0.3, tpq=25, 43 of 50 prompts classify
+**Error structure (Figure 8).** At temp=0.3, tpq=25, 43 of 50 prompts classify
 perfectly. Seven errors concentrate in two prompt pairs with similar response
 structures: "Antisocial personality disorder" (urgent) confused with "Avoidant
 personality disorder" (urgent), and three other pairs from the same question
