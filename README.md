@@ -48,9 +48,11 @@ random padding, token batching, and packet injection as partial mitigations.
 
 ## Results
 
-Experiment 1 reproduces the Wei et al. query-fingerprinting attack (paper
-Figure 3) on our local llama.cpp setup. 50 MedAlpaca prompts, 30 traces per
-query, 25 train / 5 test traces per class.
+### Experiment 1 -- Wei et al. query fingerprinting
+
+Reproduces the Wei et al. query-fingerprinting attack (paper Figure 3) on our
+local llama.cpp setup. 50 MedAlpaca prompts, 30 traces per query, 25 train /
+5 test traces per class.
 
 Three classifiers have been evaluated: Random Forest (paper baseline), LightGBM
 (primary per McDonald & Bar Or), and BiLSTM (200 epochs, 2-layer bidirectional,
@@ -173,6 +175,41 @@ CBR costs no extra bandwidth (0.89-0.91x overhead vs 1.17-1.18x for
 padding) but adds latency equal to full generation time -- the client
 receives nothing until the model finishes generating. For a 200-token
 response at ~15 tokens/sec that is roughly 13 seconds of added latency.
+
+### Experiment 2 -- Carlini & Nasr timing-based binary disambiguation
+
+Reproduces the Carlini & Nasr GMM attack on our local llama.cpp setup.
+Features: first 50 inter-packet gaps (server->client, ms) per trace. Two
+GMMs trained on 20 traces per prompt (one per hypothesis), classified by
+log-likelihood ratio.
+
+![AUPRC distribution](analysis/fig5_carlini_auprc_dist.png)
+![Precision-recall curves](analysis/fig4_carlini_pr_curves.png)
+
+Evaluated across all 1,176 prompt pairs from the 50-prompt dataset
+(temp=0.3, 30 traces per prompt, 20 train / 10 test):
+
+| Metric | Value |
+|--------|-------|
+| Pairs evaluated | 1,176 |
+| Median AUPRC | 0.881 |
+| Mean AUPRC | 0.840 |
+| Pairs ≥ 0.90 AUPRC | 545 / 1,176 (46%) |
+| Pairs ≥ 0.75 AUPRC | 875 / 1,176 (74%) |
+| Best pair AUPRC | 1.000 |
+| Worst pair AUPRC | 0.200 |
+
+The distribution is heavily right-skewed: the majority of pairs cluster near
+1.0, with a tail of hard pairs where the two prompts produce similar response
+lengths and iteration patterns. The worst pair (prompts 12 vs 29) has nearly
+identical timing profiles; the best pairs (AUPRC=1.0) involve prompts with
+very different response lengths or speculative acceptance rates.
+
+Note: the paper used 100 inter-packet gaps and 100 training traces per
+hypothesis on remote commercial APIs. We use 50 gaps (shorter local responses
+saturate 100-gap requirement) and 20 training traces. Despite smaller training
+sets, the inter-packet timing signal is clearly present on llama.cpp with
+speculative decoding.
 
 ## How It Works
 
