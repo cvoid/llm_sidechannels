@@ -42,13 +42,15 @@ def test_group_iterations_empty() -> None:
 
 def test_trace_from_pcap_iteration_bytes(synthetic_pcap: Path) -> None:
     # With window_ms=50: iter1=80 (50+30), iter2=20, iter3=40.
-    trace = trace_from_pcap(synthetic_pcap, SERVER_PORT, window_ms=50.0)
+    # skip_leading=0 to test grouping logic independently from the handshake skip.
+    trace = trace_from_pcap(synthetic_pcap, SERVER_PORT, window_ms=50.0, skip_leading=0)
     assert trace == [80, 20, 40]
 
 
 def test_trace_from_pcap_tight_window(synthetic_pcap: Path) -> None:
     # With window_ms=1ms, the 5ms gap also becomes a boundary -> 4 iterations.
-    trace = trace_from_pcap(synthetic_pcap, SERVER_PORT, window_ms=1.0)
+    # skip_leading=0 to test grouping logic independently from the handshake skip.
+    trace = trace_from_pcap(synthetic_pcap, SERVER_PORT, window_ms=1.0, skip_leading=0)
     assert trace == [50, 30, 20, 40]
 
 

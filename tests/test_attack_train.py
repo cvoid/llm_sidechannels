@@ -20,7 +20,7 @@ def test_build_rf_params() -> None:
     clf = build_rf()
     assert clf.n_estimators == 150
     assert clf.max_depth == 15
-    assert clf.min_samples_split == 10
+    assert clf.min_samples_split == 2  # paper uses 10; 2 is safe at smoke-test scale
     assert clf.min_samples_leaf == 1
 
 
