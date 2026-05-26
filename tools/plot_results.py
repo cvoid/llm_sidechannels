@@ -166,11 +166,13 @@ def fig3_defense_comparison(out: Path) -> None:
 
     # legend patches
     from matplotlib.patches import Patch
-    legend_handles = [Patch(facecolor=c, alpha=0.85, label=g)
-                      for g, c in _GROUP_COLORS.items()]
+    from matplotlib.lines import Line2D
+    from matplotlib.artist import Artist
+    legend_handles: list[Artist] = [Patch(facecolor=c, alpha=0.85, label=g)
+                                    for g, c in _GROUP_COLORS.items()]
     legend_handles.append(
-        plt.Line2D([0], [0], color="#d62728", marker="D", markersize=5,
-                   linewidth=1.2, label="Bandwidth overhead")
+        Line2D([0], [0], color="#d62728", marker="D", markersize=5,
+               linewidth=1.2, label="Bandwidth overhead")
     )
     ax1.legend(handles=legend_handles, loc="upper right", fontsize=8.5)
 

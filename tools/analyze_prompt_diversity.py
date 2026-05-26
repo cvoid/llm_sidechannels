@@ -213,10 +213,10 @@ def main() -> None:
 
     confusable.sort(reverse=True)
     for sim, pid_a, pid_b in confusable[:10]:
-        ta = prompt_text[pid_a][:40]
-        tb = prompt_text[pid_b][:40]
-        print(f"  sim={sim:.3f}  pid={pid_a:>2} '{ta}'")
-        print(f"              pid={pid_b:>2} '{tb}'")
+        text_a = prompt_text[pid_a][:40]
+        text_b = prompt_text[pid_b][:40]
+        print(f"  sim={sim:.3f}  pid={pid_a:>2} '{text_a}'")
+        print(f"              pid={pid_b:>2} '{text_b}'")
         print()
 
 

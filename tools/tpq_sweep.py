@@ -45,9 +45,12 @@ def main() -> None:
 
     temperatures = args.temperatures or [0.3, 0.6, 0.8, 1.0]
 
-    from attack.train import fit, fit_lgbm
+    from attack.train import fit, fit_lgbm, Classifier
     from attack.bilstm import fit_bilstm
     import functools
+    from collections.abc import Callable
+    import numpy as np
+    fit_fn: Callable[[np.ndarray, np.ndarray], Classifier]
     if args.classifier == "lgbm":
         fit_fn = fit_lgbm
     elif args.classifier == "bilstm":
