@@ -35,7 +35,7 @@ def build_dataset(
         for line in f:
             if line.strip():
                 entry: dict[str, object] = json.loads(line)
-                if temperature is None or entry["temperature"] == temperature:
+                if temperature is None or float(str(entry["temperature"])) == temperature:
                     entries.append(entry)
 
     X: list[list[int]] = []

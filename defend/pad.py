@@ -64,6 +64,9 @@ def _pad_event(event: bytes, mode: str, max_pad: int, fixed_size: int) -> bytes:
         extra = max(0, fixed_size - len(event))
 
     if extra < _COMMENT_OVERHEAD:
+        # Cannot inject a valid comment line with fewer than 4 bytes.
+        # Events already within _COMMENT_OVERHEAD bytes of fixed_size, or
+        # larger than fixed_size, are forwarded unmodified.
         return event
 
     # event = b"data: ...\n\n"

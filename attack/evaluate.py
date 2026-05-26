@@ -41,6 +41,9 @@ def tpq_sweep(
             manifest_path, trace_length, window_ms, server_port, temperature
         )
         for tpq in tpq_values:
+            # train_tpq=tpq requests tpq training samples per class; split()
+            # silently caps at (available - test_tpq) when fewer exist. At
+            # tpq=30 with 30 per class and test_tpq=5, training gets 25.
             X_train, X_test, y_train, y_test = _dataset.split(X, y, train_tpq=tpq)
             clf = fit_fn(X_train, y_train)
             metrics = score(clf, X_test, y_test)

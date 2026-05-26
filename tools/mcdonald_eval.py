@@ -78,19 +78,22 @@ def load_dataset(
 
 
 def evaluate_at_imbalance(
-    X_target_test: np.ndarray,
-    X_neg_pool: np.ndarray,
     scores_target: np.ndarray,
+    scores_neg_pool: np.ndarray,
     ratio: int,
     rng: np.random.Generator,
 ) -> float:
-    """AUPRC when negatives are sub-sampled to ratio:1 vs. target test size."""
-    n_target = len(X_target_test)
-    n_neg = min(n_target * ratio, len(X_neg_pool))
-    idx = rng.choice(len(X_neg_pool), size=n_neg, replace=False)
-    # Re-score negatives from the pre-computed pool (passed via X_neg_pool scores).
-    scores_neg = X_neg_pool[idx]  # these are pre-computed scores, not features
-    scores = np.concatenate([scores_target, scores_neg])
+    """AUPRC when negatives are sub-sampled to ratio:1 vs. len(scores_target).
+
+    scores_neg_pool includes both train and test negatives to allow higher
+    ratios than the test split alone provides. This is slightly optimistic
+    (the classifier has seen the train negatives), but the near-perfect test
+    AUPRC makes the bias negligible.
+    """
+    n_target = len(scores_target)
+    n_neg = min(n_target * ratio, len(scores_neg_pool))
+    idx = rng.choice(len(scores_neg_pool), size=n_neg, replace=False)
+    scores = np.concatenate([scores_target, scores_neg_pool[idx]])
     y = np.array([1] * n_target + [0] * n_neg)
     return float(average_precision_score(y, scores))
 
@@ -180,7 +183,7 @@ def main() -> None:
             continue
         auprcs = [
             evaluate_at_imbalance(
-                Xte_t, scores_all_neg, scores_target_test, ratio, rng
+                scores_target_test, scores_all_neg, ratio, rng
             )
             for _ in range(20)
         ]

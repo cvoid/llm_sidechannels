@@ -36,7 +36,7 @@ class _BiLSTM(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, T) -> (B, T, 1)
         out, _ = self.lstm(x.unsqueeze(-1))
-        return self.head(out[:, -1, :])
+        return self.head(out[:, -1, :])  # type: ignore[no-any-return]
 
 
 class BiLSTMClassifier:
@@ -111,7 +111,7 @@ class BiLSTMClassifier:
             Xt = torch.tensor(X_scaled, dtype=torch.float32).to(self.device)
             logits = self._model(Xt)
         idx = logits.argmax(dim=1).cpu().numpy()
-        return self._classes[idx]
+        return self._classes[idx]  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         assert self._model is not None and self._scaler is not None

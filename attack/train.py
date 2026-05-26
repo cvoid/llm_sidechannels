@@ -68,4 +68,4 @@ def save(clf: Classifier, path: Path) -> None:
 
 def load(path: Path) -> Classifier:
     with open(path, "rb") as f:
-        return pickle.load(f)  # type: ignore[no-any-return]
+        return pickle.load(f)
