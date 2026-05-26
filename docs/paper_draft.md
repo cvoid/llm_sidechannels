@@ -202,7 +202,7 @@ training, hold out 5 per class for testing. Sweep TPQ in {5, 10, 20, 25}.
 
 ![LightGBM confusion matrix](../analysis/fig8_confusion_matrix.png)
 
-*Figure 8: LightGBM confusion matrix at tpq=25, temp=0.3. Nearly diagonal;
+*Figure 1: LightGBM confusion matrix at tpq=25, temp=0.3. Nearly diagonal;
 8 errors visible as isolated red cells. Antisocial vs Avoidant personality
 disorder accounts for 3 of the 8 errors.*
 
@@ -235,11 +235,11 @@ disorder accounts for 3 of the 8 errors.*
 
 ![Accuracy vs TPQ -- three classifiers](../analysis/fig1_tpq_classifiers.png)
 
-*Figure 1: Accuracy vs TPQ at temp=0.3 for all three classifiers.*
+*Figure 2: Accuracy vs TPQ at temp=0.3 for all three classifiers.*
 
 ![Accuracy vs TPQ -- RF across temperatures](../analysis/fig2_tpq_temperatures.png)
 
-*Figure 2: Random Forest accuracy vs TPQ across four sampling temperatures.*
+*Figure 3: Random Forest accuracy vs TPQ across four sampling temperatures.*
 
 At tpq=25, temp=0.3: LightGBM (96.8%) > RF (95.6%) > BiLSTM (70.4%).
 
@@ -266,7 +266,7 @@ across repeated captures of the same prompt. At temperature 0.3, the draft
 achieves a high and stable acceptance rate, producing a tighter feature
 distribution per class.
 
-**Error structure (Figure 8).** At temp=0.3, tpq=25, 43 of 50 prompts classify
+**Error structure (Figure 1).** At temp=0.3, tpq=25, 43 of 50 prompts classify
 perfectly. Seven errors concentrate in two prompt pairs with similar response
 structures: "Antisocial personality disorder" (urgent) confused with "Avoidant
 personality disorder" (urgent), and three other pairs from the same question
@@ -318,12 +318,12 @@ traces per hypothesis on commercial APIs with longer responses. We use n=50
 
 ![AUPRC distribution](../analysis/fig5_carlini_auprc_dist.png)
 
-*Figure 5: Distribution of AUPRC over 1,176 prompt pairs. Right-skewed; most
+*Figure 4: Distribution of AUPRC over 1,176 prompt pairs. Right-skewed; most
 pairs cluster near 1.0 with a tail of hard pairs.*
 
 ![Precision-recall curves](../analysis/fig4_carlini_pr_curves.png)
 
-*Figure 4: PR curves for the worst, median, and best prompt pairs.*
+*Figure 5: PR curves for the worst, median, and best prompt pairs.*
 
 The distribution is bimodal: a large cluster near AUPRC=1.0 (easily separated
 pairs) and a tail of hard pairs. The hard pairs involve prompts with similar
@@ -487,7 +487,7 @@ acceptable.
 
 ![Defense comparison](../analysis/fig3_defense_comparison.png)
 
-*Figure 3: Defense accuracy (bars, left axis) and bandwidth overhead (line,
+*Figure 8: Defense accuracy (bars, left axis) and bandwidth overhead (line,
 right axis). CBR variants are the only configurations that reach chance-level
 accuracy.*
 
