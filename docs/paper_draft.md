@@ -200,8 +200,11 @@ training, hold out 5 per class for testing. Sweep TPQ in {5, 10, 20, 25}.
 
 ### 4.4 Results
 
-Figure 8 shows the LightGBM confusion matrix at tpq=25, temp=0.3. The matrix
-is nearly diagonal; all 8 errors are visible as isolated red cells.
+![LightGBM confusion matrix](../analysis/fig8_confusion_matrix.png)
+
+*Figure 8: LightGBM confusion matrix at tpq=25, temp=0.3. Nearly diagonal;
+8 errors visible as isolated red cells. Antisocial vs Avoidant personality
+disorder accounts for 3 of the 8 errors.*
 
 **Table 1: Random Forest accuracy vs. temperature and TPQ.**
 
@@ -229,6 +232,14 @@ is nearly diagonal; all 8 errors are visible as isolated red cells.
 | 0.6  | 0.076 | 0.156  | 0.396  | 0.564  |
 | 0.8  | 0.076 | 0.136  | 0.380  | 0.416  |
 | 1.0  | 0.064 | 0.188  | 0.416  | 0.524  |
+
+![Accuracy vs TPQ -- three classifiers](../analysis/fig1_tpq_classifiers.png)
+
+*Figure 1: Accuracy vs TPQ at temp=0.3 for all three classifiers.*
+
+![Accuracy vs TPQ -- RF across temperatures](../analysis/fig2_tpq_temperatures.png)
+
+*Figure 2: Random Forest accuracy vs TPQ across four sampling temperatures.*
 
 At tpq=25, temp=0.3: LightGBM (96.8%) > RF (95.6%) > BiLSTM (70.4%).
 
@@ -305,6 +316,15 @@ traces per hypothesis on commercial APIs with longer responses. We use n=50
 | Best pair | 1.000 (187 pairs) |
 | Worst pair | 0.200 (prompts 12 vs 29) |
 
+![AUPRC distribution](../analysis/fig5_carlini_auprc_dist.png)
+
+*Figure 5: Distribution of AUPRC over 1,176 prompt pairs. Right-skewed; most
+pairs cluster near 1.0 with a tail of hard pairs.*
+
+![Precision-recall curves](../analysis/fig4_carlini_pr_curves.png)
+
+*Figure 4: PR curves for the worst, median, and best prompt pairs.*
+
 The distribution is bimodal: a large cluster near AUPRC=1.0 (easily separated
 pairs) and a tail of hard pairs. The hard pairs involve prompts with similar
 response lengths and speculative acceptance rates. Prompts 12 and 29 ("When
@@ -353,6 +373,14 @@ the classifier is evaluated on a genuinely separate distribution.
 | AUPRC at 5:1 imbalance | 0.990 |
 | AUPRC at 10:1 imbalance | 0.987 |
 | AUPRC at 14:1 imbalance | 0.984 |
+
+![Topic inference PR curve](../analysis/fig6_mcdonald_pr_curve.png)
+
+*Figure 6: Precision-recall curve for topic inference (Python vs medical).*
+
+![AUPRC vs imbalance](../analysis/fig7_mcdonald_imbalance.png)
+
+*Figure 7: AUPRC vs negative:positive class imbalance ratio.*
 
 AUPRC is stable across imbalance ratios, slightly increasing at 5:1 due to
 the larger negative sample providing more boundary information. The
@@ -456,6 +484,12 @@ acceptable.
 | pad fixed=2048 | 0.936 | 0.020 | 1.17x |
 | **cbr burst** | **0.020** | **0.936** | **0.89x** |
 | **cbr 512/20ms** | **0.020** | **0.936** | **0.91x** |
+
+![Defense comparison](../analysis/fig3_defense_comparison.png)
+
+*Figure 3: Defense accuracy (bars, left axis) and bandwidth overhead (line,
+right axis). CBR variants are the only configurations that reach chance-level
+accuracy.*
 
 ---
 
