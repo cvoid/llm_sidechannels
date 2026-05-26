@@ -211,6 +211,39 @@ saturate 100-gap requirement) and 20 training traces. Despite smaller training
 sets, the inter-packet timing signal is clearly present on llama.cpp with
 speculative decoding.
 
+### Experiment 3 -- McDonald & Bar Or topic inference
+
+Reproduces the McDonald & Bar Or LightGBM topic-detection pipeline on our
+local llama.cpp setup. Target topic: 50 Python programming questions (10
+traces each). Negative set: 50 MedAlpaca medical questions (30 traces each).
+Features: first 50 (packet_size, inter_arrival_ms) pairs flattened to a
+100-dim vector. 80/20 train/test split per class.
+
+![Topic inference PR curve](analysis/fig6_mcdonald_pr_curve.png)
+![AUPRC vs imbalance](analysis/fig7_mcdonald_imbalance.png)
+
+| Metric | Value |
+|--------|-------|
+| Target traces | 495 (50 prompts × ~10 runs) |
+| Negative traces | 1,467 (50 prompts × 30 runs) |
+| AUPRC (balanced 1:1) | **0.986** |
+| AUPRC at 5:1 imbalance | 0.990 |
+| AUPRC at 10:1 imbalance | 0.987 |
+| AUPRC at 14:1 imbalance | 0.984 |
+
+The (size, timing) feature representation cleanly separates the two topics:
+Python programming responses contain code blocks and structured explanations,
+producing a characteristic pattern of large initial packets (code) followed
+by smaller continuation packets. Medical responses have different pacing.
+AUPRC remains above 0.984 up to 14:1 negative:positive imbalance, consistent
+with the paper's finding of >0.98 AUPRC across 28 production LLMs.
+
+Note: the paper trained on 100 prompt variants and evaluated against 11,716
+Quora question negatives (117:1 imbalance). Our dataset is smaller; the
+topic boundary (programming vs. medical) is also more distinct than the
+paper's "money laundering legality" vs. general Quora questions, which
+explains the high AUPRC even at moderate training set sizes.
+
 ## How It Works
 
 ### The signal source

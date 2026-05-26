@@ -39,7 +39,7 @@ class GMMBinaryClassifier:
     def log_ratio(self, X: np.ndarray) -> np.ndarray:
         """Log-likelihood ratio score: positive -> B, negative -> A."""
         assert self._gmm_a is not None and self._gmm_b is not None
-        return self._gmm_b.score_samples(X) - self._gmm_a.score_samples(X)
+        return self._gmm_b.score_samples(X) - self._gmm_a.score_samples(X)  # type: ignore[no-any-return]
 
     def auprc(self, X_test: np.ndarray, y_test: np.ndarray) -> float:
         """Average precision (area under precision-recall curve). y=1 means B."""

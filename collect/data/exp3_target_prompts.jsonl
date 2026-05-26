@@ -1,0 +1,50 @@
+{"id": 0, "text": "How do I read a CSV file into a pandas DataFrame?"}
+{"id": 1, "text": "What is the difference between a list and a tuple in Python?"}
+{"id": 2, "text": "How do I handle exceptions with try/except/finally in Python?"}
+{"id": 3, "text": "What is a Python decorator and how do I write one?"}
+{"id": 4, "text": "How do I sort a list of dictionaries by a specific key?"}
+{"id": 5, "text": "What is the difference between deepcopy and shallow copy in Python?"}
+{"id": 6, "text": "How do I use list comprehensions in Python?"}
+{"id": 7, "text": "What is the GIL in Python and how does it affect multithreading?"}
+{"id": 8, "text": "How do I connect to a SQLite database using Python?"}
+{"id": 9, "text": "What is the difference between @staticmethod and @classmethod?"}
+{"id": 10, "text": "How do I use Python generators and yield?"}
+{"id": 11, "text": "How do I merge two dictionaries in Python?"}
+{"id": 12, "text": "What is the difference between is and == in Python?"}
+{"id": 13, "text": "How do I use regular expressions in Python with the re module?"}
+{"id": 14, "text": "What is a Python context manager and how do I write one?"}
+{"id": 15, "text": "How do I profile Python code to find performance bottlenecks?"}
+{"id": 16, "text": "What is the difference between multiprocessing and threading in Python?"}
+{"id": 17, "text": "How do I serialize and deserialize objects with pickle in Python?"}
+{"id": 18, "text": "How do I implement a binary search tree in Python?"}
+{"id": 19, "text": "What are Python dataclasses and when should I use them?"}
+{"id": 20, "text": "How do I write unit tests in Python using pytest?"}
+{"id": 21, "text": "How do I use asyncio for async programming in Python?"}
+{"id": 22, "text": "What is the difference between __str__ and __repr__ in Python?"}
+{"id": 23, "text": "How do I flatten a nested list in Python?"}
+{"id": 24, "text": "How do I use Python's itertools module?"}
+{"id": 25, "text": "What is the difference between mutable and immutable types in Python?"}
+{"id": 26, "text": "How do I implement a queue using Python's collections module?"}
+{"id": 27, "text": "How do I use pathlib to work with file paths in Python?"}
+{"id": 28, "text": "What is monkey patching in Python and when is it useful?"}
+{"id": 29, "text": "How do I use Python's functools.lru_cache for memoization?"}
+{"id": 30, "text": "What is the difference between __init__ and __new__ in Python?"}
+{"id": 31, "text": "How do I parse JSON from an HTTP response in Python?"}
+{"id": 32, "text": "How do I use Python's logging module for structured logging?"}
+{"id": 33, "text": "What are Python slots and when should I use them?"}
+{"id": 34, "text": "How do I implement a singleton pattern in Python?"}
+{"id": 35, "text": "How do I use NumPy for matrix multiplication?"}
+{"id": 36, "text": "What is the difference between append and extend for Python lists?"}
+{"id": 37, "text": "How do I use Python's argparse module to parse command-line arguments?"}
+{"id": 38, "text": "What is duck typing in Python and how does it differ from static typing?"}
+{"id": 39, "text": "How do I implement a stack using Python?"}
+{"id": 40, "text": "How do I use Python's heapq module for a priority queue?"}
+{"id": 41, "text": "What is the difference between a module and a package in Python?"}
+{"id": 42, "text": "How do I write a Python script that runs as both a module and a script?"}
+{"id": 43, "text": "How do I use Python's collections.Counter to count elements?"}
+{"id": 44, "text": "What is method resolution order (MRO) in Python?"}
+{"id": 45, "text": "How do I use Python's subprocess module to run shell commands?"}
+{"id": 46, "text": "What is the difference between range and xrange in Python?"}
+{"id": 47, "text": "How do I implement a hash map from scratch in Python?"}
+{"id": 48, "text": "How do I use Python's enum module?"}
+{"id": 49, "text": "What are Python abstract base classes and how do I use them?"}

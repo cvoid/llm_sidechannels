@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-from scapy.all import rdpcap, IP, TCP  # type: ignore[import-untyped]
+from scapy.all import rdpcap, IP, TCP  # type: ignore[attr-defined]
 
 
 def extract_records(

@@ -34,6 +34,8 @@ def main() -> None:
     parser.add_argument("--host", default="server.local")
     parser.add_argument("--port", type=int, default=8443)
     parser.add_argument("--iface", default="lo")
+    parser.add_argument("--prompts-file", type=Path, default=None,
+                        help="JSONL file with 'text' field per line (default: exp1_prompts.jsonl)")
     parser.add_argument("--system-prompt", default=MEDICAL_SYSTEM_PROMPT,
                         help="system prompt sent with each query (default: medical assistant)")
     parser.add_argument("--no-system-prompt", action="store_true",
@@ -42,7 +44,7 @@ def main() -> None:
 
     system_prompt = "" if args.no_system_prompt else args.system_prompt
     out_dir = args.out_dir or Path(f"data/raw/temp_{args.temperature}")
-    prompts = load_prompts()
+    prompts = load_prompts(args.prompts_file) if args.prompts_file else load_prompts()
     if args.prompts is not None:
         prompts = prompts[: args.prompts]
 
